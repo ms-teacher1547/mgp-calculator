@@ -109,7 +109,7 @@ public class ResultatMGP {
      * @param totalPoints Le total des points
      */
     public ResultatMGP(List<UE> ues, Double mgp, String mention, 
-                      Integer totalCredits, Double totalPoints) {
+                      Integer totalCredits, Double totalPoints, String nomEtudiant) {
         this();
         this.ues = new ArrayList<>(ues);
         this.mgp = mgp;
@@ -118,7 +118,10 @@ public class ResultatMGP {
         this.totalPoints = totalPoints;
         this.nombreUE = ues.size();
         this.admis = mgp >= 2.0; // Seuil d'admission à UY1
+        this.nomEtudiant = nomEtudiant;
     }
+
+    
     
     // Getters et Setters
     
