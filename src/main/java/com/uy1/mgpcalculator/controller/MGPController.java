@@ -3,14 +3,12 @@ package com.uy1.mgpcalculator.controller;
 import com.itextpdf.text.DocumentException;
 import com.uy1.mgpcalculator.model.ResultatMGP;
 import com.uy1.mgpcalculator.model.UE;
+import com.uy1.mgpcalculator.repository.ResultatMGPRepository;
 import com.uy1.mgpcalculator.service.MGPService;
 import com.uy1.mgpcalculator.service.PDFService;
-
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -20,20 +18,25 @@ public class MGPController {
 
     private final MGPService mgpService;
     private final PDFService pdfService;
+    private final ResultatMGPRepository resultatRepository;
 
-    public MGPController(MGPService mgpService, PDFService pdfService) {
+    public MGPController(MGPService mgpService, PDFService pdfService, 
+                        ResultatMGPRepository resultatRepository) {
         this.mgpService = mgpService;
         this.pdfService = pdfService;
+        this.resultatRepository = resultatRepository;
     }
 
     /**
-     * Endpoint pour calculer le MGP
-     * 
-     * @param ues Liste des UE à calculer
-     * @return Le résultat du calcul
+     * Nouveau endpoint unifié pour calculer et sauvegarder
+     * @param payload Données de calcul
+     * @param autoSave true pour sauvegarder automatiquement (défaut: true)
      */
     @PostMapping("/calculer")
-    public ResponseEntity<ResultatMGP> calculerMGP(@RequestBody CalculMGPPayload payload) {
+    public ResponseEntity<ResultatMGP> calculerMGP(
+            @RequestBody CalculMGPPayload payload,
+            @RequestParam(defaultValue = "true") boolean autoSave) {
+        
         try {
             if (!mgpService.validerUEs(payload.getUes())) {
                 return ResponseEntity.badRequest().build();
@@ -41,90 +44,57 @@ public class MGPController {
 
             ResultatMGP resultat = mgpService.calculerResultatMGP(
                 payload.getUes(), 
-                payload.getNomEtudiant()  // Passez le nom ici
+                payload.getNomEtudiant()
             );
+
+            if (autoSave) {
+                resultat = mgpService.sauvegarderResultat(resultat);
+            }
+
             return ResponseEntity.ok(resultat);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
     }
 
-    // Ajoutez cette classe dans un nouveau fichier ou comme classe interne
-    public static class CalculMGPPayload {
-        private List<UE> ues;
-        private String nomEtudiant;
-
-        // Getters et setters
-        public List<UE> getUes() {
-            return ues;
-        }
-
-        public void setUes(List<UE> ues) {
-            this.ues = ues;
-        }
-
-        public String getNomEtudiant() {
-            return nomEtudiant;
-        }
-
-        public void setNomEtudiant(String nomEtudiant) {
-            this.nomEtudiant = nomEtudiant;
-        }
-    }
-
     /**
-     * Endpoint pour vérifier la validité d'une liste d'UE
-     * 
-     * @param ues Liste des UE à vérifier
-     * @return true si la liste est valide
+     * Génération PDF à partir d'un ID sauvegardé
      */
-    @PostMapping("/valider")
-    public ResponseEntity<Boolean> validerUEs(@RequestBody List<UE> ues) {
-        return ResponseEntity.ok(mgpService.validerUEs(ues));
-    }
-
-    /**
-     * Endpoint pour calculer le pourcentage de réussite
-     * 
-     * @param ues Liste des UE
-     * @return Le pourcentage de réussite
-     */
-    @PostMapping("/reussite")
-    public ResponseEntity<Double> calculerPourcentageReussite(@RequestBody List<UE> ues) {
-        return ResponseEntity.ok(mgpService.calculerPourcentageReussite(ues));
-    }
-
-    /**
-     * Endpoint pour compter les UE en échec
-     * 
-     * @param ues Liste des UE
-     * @return Nombre d'UE en échec
-     */
-    @PostMapping("/echecs")
-    public ResponseEntity<Long> compterUEEchecs(@RequestBody List<UE> ues) {
-        return ResponseEntity.ok(mgpService.compterUEEchecs(ues));
-    }
-
-    /**
-     * Endpoint pour générer un PDF du résultat
-     * 
-     * @param resultat Le résultat à convertir en PDF
-     * @return ResponseEntity contenant le PDF
-     */
-    @PostMapping("/generer-pdf")
-    public ResponseEntity<byte[]> genererPDF(@RequestBody ResultatMGP resultat) {
+    @GetMapping("/pdf/{id}")
+    public ResponseEntity<byte[]> genererPdfParId(@PathVariable Long id) {
         try {
-            byte[] pdf = pdfService.genererBulletinMGP(resultat);
-            
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDispositionFormData("filename", "bulletin-mgp.pdf");
-            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
-            
-            return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
+            ResultatMGP resultat = resultatRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+            return preparerReponsePdf(pdfService.genererBulletinMGP(resultat), 
+                                    "bulletin-" + resultat.getNomEtudiant() + ".pdf");
         } catch (DocumentException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur de génération PDF");
         }
+    }
+
+    /**
+     * Génération PDF directe (pour cas spéciaux)
+     */
+    @PostMapping("/pdf")
+    public ResponseEntity<byte[]> genererPdfDirect(@RequestBody ResultatMGP resultat) {
+        try {
+            return preparerReponsePdf(pdfService.genererBulletinMGP(resultat), 
+                                    "bulletin-temporaire.pdf");
+        } catch (DocumentException e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur de génération PDF");
+        }
+    }
+
+    // Méthodes utilitaires et classes internes
+    private ResponseEntity<byte[]> preparerReponsePdf(byte[] pdf, String filename) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDisposition(
+            ContentDisposition.attachment()
+                .filename(filename)
+                .build());
+        return new ResponseEntity<>(pdf, headers, HttpStatus.OK);
     }
 
     @GetMapping("/historique/{nom}")
@@ -132,8 +102,21 @@ public class MGPController {
         return ResponseEntity.ok(mgpService.rechercherHistorique(nom));
     }
 
+    // Ancien endpoint gardé pour compatibilité
+    @Deprecated
     @PostMapping("/sauvegarder")
     public ResponseEntity<ResultatMGP> sauvegarderResultat(@RequestBody ResultatMGP resultat) {
         return ResponseEntity.ok(mgpService.sauvegarderResultat(resultat));
+    }
+
+    public static class CalculMGPPayload {
+        private List<UE> ues;
+        private String nomEtudiant;
+
+        // Getters & Setters
+        public List<UE> getUes() { return ues; }
+        public void setUes(List<UE> ues) { this.ues = ues; }
+        public String getNomEtudiant() { return nomEtudiant; }
+        public void setNomEtudiant(String nomEtudiant) { this.nomEtudiant = nomEtudiant; }
     }
 }
