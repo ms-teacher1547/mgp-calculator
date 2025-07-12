@@ -80,7 +80,7 @@ public class PDFService {
         ajouterCellule(table, resultat.getNomEtudiant() != null ? resultat.getNomEtudiant() : "Non spécifié", NORMAL_FONT);
         
         ajouterCellule(table, "Date de calcul:", BOLD_FONT);
-        ajouterCellule(table, resultat.getDateCalcul().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), NORMAL_FONT);
+        ajouterCellule(table, resultat.getDateCalcul().format(DateTimeFormatter.ofPattern("dd/MM/yyyy")), NORMAL_FONT);
         
         ajouterCellule(table, "Nombre d'UE:", BOLD_FONT);
         ajouterCellule(table, String.valueOf(resultat.getNombreUE()), NORMAL_FONT);
@@ -100,7 +100,7 @@ public class PDFService {
         table.setSpacingAfter(15f);
         
         // En-têtes du tableau
-        Stream.of("UE", "Crédits", "Note", "Côte", "Points Qualité", "Mention")
+        Stream.of("UE", "Crédits", "Note", "Côte", "Points Qualité", "Decision")
             .forEach(header -> {
                 PdfPCell cell = new PdfPCell(new Phrase(header, BOLD_FONT));
                 cell.setHorizontalAlignment(Element.ALIGN_CENTER);
