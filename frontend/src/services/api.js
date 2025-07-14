@@ -1,4 +1,3 @@
-// src/services/api.js
 import axios from 'axios';
 
 const api = axios.create({
@@ -9,16 +8,33 @@ const api = axios.create({
 });
 
 export default {
-  calculateMGP(ues, studentName) {
-    return api.post('/calculer', { 
-      ues,
-      nomEtudiant: studentName 
-    });
+  async calculateMGP(ues, studentName) {
+    try {
+      const response = await api.post('/calculer', { 
+        ues: ues.filter(ue => ue.nom && !isNaN(ue.note) && !isNaN(ue.credits)),
+        nomEtudiant: studentName 
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Erreur API:', {
+        status: error.response?.status,
+        data: error.response?.data,
+        config: error.config
+      });
+      throw new Error(error.response?.data?.message || 'Erreur serveur');
+    }
   },
-  
-  generatePDF(resultId) {
-    return api.get(`/telecharger-pdf/${resultId}`, {
-      responseType: 'blob'
-    });
+
+  // 👉 AJOUTE CETTE FONCTION
+  async generatePDF(id) {
+    try {
+      const response = await api.get(`/pdf/${id}`, {
+        responseType: 'blob', // important pour les fichiers binaires
+      });
+      return response;
+    } catch (error) {
+      console.error('Erreur PDF:', error);
+      throw error;
+    }
   }
 };

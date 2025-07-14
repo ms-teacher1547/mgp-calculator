@@ -1,8 +1,8 @@
 // src/components/UeInputForm.jsx
 import { useState } from 'react';
-import { 
-  Button, 
-  TextField, 
+import {
+  Button,
+  TextField,
   Paper,
   Table,
   TableBody,
@@ -28,7 +28,7 @@ export default function UeInputForm({ onCalculate }) {
         ues.filter(ue => ue.nom.trim() !== ''),
         studentName
       );
-      onCalculate(response.data);
+      onCalculate(response); // on envoie le résultat au parent
     } catch (error) {
       console.error('Erreur:', error.response?.data);
       alert('Erreur lors du calcul');
@@ -40,7 +40,7 @@ export default function UeInputForm({ onCalculate }) {
       <Typography variant="h6" gutterBottom>
         Saisie des Unités d'Enseignement
       </Typography>
-      
+
       <TextField
         label="Nom de l'étudiant"
         value={studentName}
@@ -50,7 +50,7 @@ export default function UeInputForm({ onCalculate }) {
         required
       />
 
-      <TableContainer component={Paper} sx={{ mt: 2 }}>
+      <TableContainer sx={{ mt: 2 }}>
         <Table>
           <TableBody>
             {ues.map((ue, index) => (
@@ -68,7 +68,7 @@ export default function UeInputForm({ onCalculate }) {
                     required
                   />
                 </TableCell>
-                <TableCell width="120px">
+                <TableCell>
                   <TextField
                     select
                     label="Crédits"
@@ -81,11 +81,11 @@ export default function UeInputForm({ onCalculate }) {
                     SelectProps={{ native: true }}
                     fullWidth
                   >
-                    <option value={3}>3 crédits</option>
-                    <option value={6}>6 crédits</option>
+                    <option value={3}>3</option>
+                    <option value={6}>6</option>
                   </TextField>
                 </TableCell>
-                <TableCell width="120px">
+                <TableCell>
                   <TextField
                     type="number"
                     label="Note"
@@ -106,20 +106,11 @@ export default function UeInputForm({ onCalculate }) {
         </Table>
       </TableContainer>
 
-      <Button 
-        onClick={handleAddUe} 
-        variant="outlined" 
-        sx={{ mt: 2, mr: 2 }}
-      >
+      <Button onClick={handleAddUe} variant="outlined" sx={{ mt: 2, mr: 2 }}>
         Ajouter UE
       </Button>
-      
-      <Button 
-        onClick={handleSubmit} 
-        variant="contained" 
-        color="primary" 
-        sx={{ mt: 2 }}
-      >
+
+      <Button onClick={handleSubmit} variant="contained" color="primary" sx={{ mt: 2 }}>
         Calculer MGP
       </Button>
     </Paper>

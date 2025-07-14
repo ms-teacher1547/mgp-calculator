@@ -19,7 +19,7 @@ public class NotationUtils {
     };
     
     private static final String[] MENTIONS_MGP = {
-        "Échec", "CANT", "Passable", "Assez Bien", "Bien", "Très Bien"
+        "Échec", "CANT", "Passable", "Assez Bien", "Bien", "Très Bien", "Excellent"
     };
 
     /**
