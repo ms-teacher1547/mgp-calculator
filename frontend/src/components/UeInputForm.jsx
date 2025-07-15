@@ -1,5 +1,6 @@
 // src/components/UeInputForm.jsx
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Button,
   TextField,
@@ -13,7 +14,8 @@ import {
 } from '@mui/material';
 import api from '../services/api';
 
-export default function UeInputForm({ onCalculate }) {
+export default function UeInputForm() {
+  const navigate = useNavigate();
   const [ues, setUes] = useState([{ nom: '', credits: 6, note: 0 }]);
   const [studentName, setStudentName] = useState('');
 
@@ -28,7 +30,7 @@ export default function UeInputForm({ onCalculate }) {
         ues.filter(ue => ue.nom.trim() !== ''),
         studentName
       );
-      onCalculate(response); // on envoie le résultat au parent
+      navigate('/result', { state: { result: response } });
     } catch (error) {
       console.error('Erreur:', error.response?.data);
       alert('Erreur lors du calcul');
