@@ -19,7 +19,7 @@ public class ResultatMGPTest {
         
         List<UE> ues = Arrays.asList(ue1, ue2);
         
-        ResultatMGP resultat = new ResultatMGP(ues, 3.5, "Très Bien", 12, 42.0);
+        ResultatMGP resultat = new ResultatMGP(ues, 3.5, "Très Bien", 12, 42.0, null);
         
         assertEquals(3.5, resultat.getMgp());
         assertEquals("Très Bien", resultat.getMention());
@@ -36,7 +36,7 @@ public class ResultatMGPTest {
         UE ue2 = new UE("UE2", 6, 30.0); // En échec
         
         List<UE> ues = Arrays.asList(ue1, ue2);
-        ResultatMGP resultat = new ResultatMGP(ues, 2.0, "Passable", 12, 24.0);
+        ResultatMGP resultat = new ResultatMGP(ues, 2.0, "Passable", 12, 24.0, null);
         
         assertEquals(50.0, resultat.getPourcentageReussite());
         assertEquals(1, resultat.getNombreUEValidees());
